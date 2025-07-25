@@ -1,0 +1,158 @@
+<!-- In trading_app/templates/portfolio.html -->
+{% extends "base.html" %}
+{% block title %}Portfolio{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Holdings ({{ portfolio|length }})</h1>
+</div>
+
+<div class="card summary-card">
+    <div class="summary-item">
+        <span class="label">Current value</span>
+        <h2 id="total-current-value">₹0.00</h2>
+    </div>
+    <div class="summary-item">
+        <span class="label">Invested value</span>
+        <h2 id="total-invested-value">₹0.00</h2>
+    </div>
+    <div class="summary-item">
+        <span class="label">Total returns</span>
+        <h2 id="total-returns">₹0.00 (0.00%)</h2>
+    </div>
+    <div class="summary-item">
+        <span class="label">Available funds</span>
+        <h2 id="available-funds">₹{{ funds|round(2) }}</h2>
+    </div>
+</div>
+
+<div class="card holdings-card">
+    <div class="holdings-header">
+        <div class="col-company">Company</div>
+        <div class="col-market-price">Market price</div>
+        <div class="col-returns">Total returns</div>
+        <div class="col-value">Current (Invested)</div>
+    </div>
+    <div class="holdings-body">
+        {% for symbol, data in portfolio.items() %}
+        <div class="holding-row" data-symbol="{{ symbol }}" data-quantity="{{ data.quantity }}" data-invested="{{ data.invested_value }}">
+            <div class="col-company">
+                <span class="company-name" id="name-{{symbol}}">{{ symbol }}</span>
+                <span class="company-meta">{{ data.quantity }} shares • Avg. ₹{{ data.avg_price }}</span>
+            </div>
+            <div class="col-market-price">
+                <span class="market-price-value" id="price-{{symbol}}">Loading...</span>
+                <span class="market-fluctuation" id="fluctuation-{{symbol}}">--</span>
+            </div>
+            <div class="col-returns">
+                <span class="returns-value" id="return-{{symbol}}">₹0.00</span>
+                <span class="returns-percent" id="return-percent-{{symbol}}">0.00%</span>
+            </div>
+            <div class="col-value">
+                <span class="current-value" id="current-value-{{symbol}}">₹0.00</span>
+                <span class="invested-value">₹{{ data.invested_value|round(2) }}</span>
+            </div>
+        </div>
+        {% else %}
+        <p class="no-holdings">You have no holdings. Go to the <a href="{{url_for('trade')}}">Trade</a> tab to buy stocks.</p>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // Select all holding rows to iterate over them
+    const holdingRows = document.querySelectorAll('.holding-row');
+    // If there are no holdings on the page, stop the script
+    if (holdingRows.length === 0) return;
+
+    // A helper function to format numbers as Indian Rupees (₹)
+    const formatCurrency = (value) => {
+        if (typeof value !== 'number') {
+            value = 0;
+        }
+        return `₹${value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
+    // The main function to fetch data and update the entire page
+    const updatePortfolio = async () => {
+        try {
+            // Call our backend API to get the latest data for all stocks
+            const response = await fetch('/api/update-portfolio');
+            const liveData = await response.json();
+
+            let totalCurrentValue = 0;
+            let totalInvestedValue = 0;
+
+            // Loop through each stock row on the page
+            holdingRows.forEach(row => {
+                const symbol = row.dataset.symbol;
+                const quantity = parseFloat(row.dataset.quantity);
+                const investedValue = parseFloat(row.dataset.invested);
+                const stockData = liveData[symbol]; // Get live data for this specific stock
+
+                totalInvestedValue += investedValue;
+
+                // Only update if we received live data for this stock
+                if (stockData) {
+                    const livePrice = stockData.price;
+                    const change = stockData.change;
+                    const percentChange = stockData.percent_change;
+                    
+                    const currentValue = quantity * livePrice;
+                    totalCurrentValue += currentValue;
+                    const totalReturn = currentValue - investedValue;
+                    const returnPercent = (investedValue > 0) ? (totalReturn / investedValue) * 100 : 0;
+                    
+                    // Get all the specific elements inside this row that need updating
+                    const priceEl = document.getElementById(`price-${symbol}`);
+                    const fluctuationEl = document.getElementById(`fluctuation-${symbol}`);
+                    const returnEl = document.getElementById(`return-${symbol}`);
+                    const returnPercentEl = document.getElementById(`return-percent-${symbol}`);
+                    const currentValueEl = document.getElementById(`current-value-${symbol}`);
+
+                    // Update the text content of each element
+                    priceEl.textContent = formatCurrency(livePrice);
+                    currentValueEl.textContent = formatCurrency(currentValue);
+                    returnEl.textContent = formatCurrency(totalReturn);
+                    returnPercentEl.textContent = `${returnPercent.toFixed(2)}%`;
+                    fluctuationEl.textContent = `${change > 0 ? '+' : ''}${change.toFixed(2)} (${percentChange.toFixed(2)}%)`;
+
+                    // Update the colors (green for positive, red for negative)
+                    [returnEl, returnPercentEl, fluctuationEl].forEach(el => {
+                        el.classList.remove('positive', 'negative');
+                        if (change > 0) el.classList.add('positive');
+                        else if (change < 0) el.classList.add('negative');
+                    });
+                }
+            });
+
+            // After looping through all stocks, update the main summary card at the top
+            const totalReturns = totalCurrentValue - totalInvestedValue;
+            const totalReturnPercent = (totalInvestedValue > 0) ? (totalReturns / totalInvestedValue) * 100 : 0;
+
+            document.getElementById('total-current-value').textContent = formatCurrency(totalCurrentValue);
+            document.getElementById('total-invested-value').textContent = formatCurrency(totalInvestedValue);
+            const totalReturnsEl = document.getElementById('total-returns');
+            totalReturnsEl.textContent = `${formatCurrency(totalReturns)} (${totalReturnPercent.toFixed(2)}%)`;
+            
+            // Set the color for the total returns
+            totalReturnsEl.classList.remove('positive', 'negative');
+            if (totalReturns > 0) totalReturnsEl.classList.add('positive');
+            else if (totalReturns < 0) totalReturnsEl.classList.add('negative');
+
+        } catch (error) {
+            // Log any errors to the browser's developer console
+            console.error("Failed to update portfolio:", error);
+        }
+    };
+
+    // --- SCRIPT EXECUTION ---
+    // 1. Call the function immediately on page load to get initial data
+    updatePortfolio();
+    // 2. Set an interval to call the function repeatedly every 1 second (1000ms)
+    setInterval(updatePortfolio, 1000); 
+});
+</script>
+{% endblock %}

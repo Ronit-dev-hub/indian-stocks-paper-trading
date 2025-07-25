@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="page-header">
+    <h1>Trade</h1>
+    <div class="funds-display">Available Funds: <strong>₹{{ funds|round(2) }}</strong></div>
+</div>
+
+<div class="card-grid">
+    <div class="card">
+        <h2>Buy Stocks</h2>
+        <form method="post" class="trade-form">
+            <div class="form-group">
+                <label for="symbol">Stock Symbol (e.g., RELIANCE)</label>
+                <input type="text" name="symbol" id="symbol" required>
+            </div>
+            <div class="form-group">
+                <label for="quantity">Quantity</label>
+                <input type="number" name="quantity" id="quantity" required min="1">
+            </div>
+            <button type="submit" name="execute_trade" class="btn-primary">Place Market Order</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Sell Stocks</h2>
+        <form method="post" class="trade-form">
+            <div class="form-group">
+                <label for="sell_symbol">Stock Symbol (e.g., RELIANCE)</label>
+                <input type="text" name="sell_symbol" id="sell_symbol" required>
+            </div>
+            <div class="form-group">
+                <label for="sell_quantity">Quantity</label>
+                <input type="number" name="sell_quantity" id="sell_quantity" required min="1">
+            </div>
+            <button type="submit" name="execute_sell" class="btn-danger">Sell Stock</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h2>Manage Funds</h2>
+        <form method="post">
+            <div class="form-group">
+                <label for="amount">Amount to Add</label>
+                <input type="number" name="amount" id="amount" required min="0.01" step="0.01">
+            </div>
+            <button type="submit" name="add_funds" class="btn-secondary">Add Funds</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
