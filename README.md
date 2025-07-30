@@ -1,6 +1,6 @@
 # Paper Trader (Indian Stocks)
- I came to know about stock markets but i don't have the money to invest till now so i created this application just to test my  investing and trading skills.
-This is a web application for paper trading Indian stocks using live market data from Yahoo Finance (via yfinance). Users can buy and sell stocks, manage virtual funds, and view their portfolio performance in real time.I bet you guys will like the application after you know it has been built by a 16 y/o high school kid from India. Feel free to improvise and modify it with your own preferences
+ I came to know about stock markets when i was 14 y/o but i don't have the money to invest till now so i created this application just to test my  investing and trading skills.
+This is a web application for paper trading Indian stocks using live market data (well you can ultimately trade in any stock but you will see the currency as INR ). Users can buy and sell stocks, manage virtual funds, and view their portfolio performance in real time.I bet you guys will like the application after you know it has been built by a 16 y/o high school kid from India. Feel free to improvise and modify it with your own preferences
 
 ## Features
 - **Buy/Sell Indian stocks** with virtual money
